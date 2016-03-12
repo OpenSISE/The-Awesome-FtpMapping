@@ -4,7 +4,7 @@
 ftpmapping.py - The-awesome-ftpmapping-script
 """
 import os
-import optparse
+import optparse, re
 import ftplib
 
 LOCATION_NONE     = 'NONE'
@@ -91,17 +91,15 @@ class Tree(object):
         return True
     
     def resolve_lines(self, line):
-        seprate = line.split()
-        resolved_name = [ value for key,value in enumerate(seprate) if key >7]
-        name = ''
-        for key,value in enumerate(resolved_name):
-            name = name + ' ' + value
-        name = name.strip().decode('gbk').encode('gbk')
+        pattern = re.compile(r'(\S+)\s+(\d)\s+(\S+)\s+(\S+)\s+(\d+)\s+(\S+)\s+(\d+)\s+(\d{2}:\d{2}|\d+)\s+(.*)')
+        seprate = re.match(pattern, line).groups()
+        name = seprate[-1]
+        # content = name + str(resolved_name) +  "\n"
         if name == '.' or name == '..':
             pass
         else:
-            size = seprate[-5].decode('gbk')
-            proper = seprate[0].decode('gbk')
+            size = seprate[-5]
+            proper = seprate[0]
             is_dir = True if proper.upper().startswith('D') else False
             line = Line(name, size, is_dir)
             self.entries.append(line)
@@ -111,7 +109,6 @@ class Tree(object):
  
     def __build(self, path, depth, parent, location):
         name = os.path.basename(path)
-
         node = Node(name, depth, parent, location)
 
         self.add_node(node)
@@ -152,6 +149,7 @@ class Tree(object):
                         with open('error.log', 'a') as f:
                             f.write(childpath+"\n")
                         # continue the process
+                        print 'Error change working directory:' + childpath
                         return
 
                 location = LOCATION_TAIL if i == end_index else LOCATION_MID
@@ -198,8 +196,10 @@ class _FTPCtx():
         self.username = username
         self.password = password
         self.connection = ftplib.FTP(self.server, self.username, self.password)
+        self.encoding = 'GB18030'
     def init(self):
         self.connection = ftplib.FTP(self.server, self.username, self.password)
+        self.encoding = 'GB18030'
         
         
  
